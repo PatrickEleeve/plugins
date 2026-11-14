@@ -32,17 +32,27 @@ pstack skills use Cursor names. In Claude Code, read this file once per session,
 | Cursor | Claude Code |
 | --- | --- |
 | `claude-<family>-<version>-<effort>[-fast]`, such as `claude-opus-5-5-xhigh` | `model: "opus"` and `effort: "xhigh"`. `model` takes only `opus`, `sonnet`, `haiku`, `fable`. Drop `-fast`. |
-| A `grok-*`, `gpt-*`, or other non-Claude slug | Omit `model` so the agent runs on the session model, and say so. |
+| A `grok-*`, `gpt-*`, or other non-Claude slug | A single role (`swarm workers`, a code delegate): omit `model` so the agent runs on the session model, and say so. A seat in a panel list (`arena runners`, `arena cross-judge pool`, `architect runners`, `interrogate reviewers`): see Panels below. |
 | `auto` or `inherit-parent` | Omit `model`. |
 | The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`. Claude Code loads it into every new session, so its role lines are already in context. If they are not, read the file. If the file or the role's line is missing, use the skill's default slug. |
 | A role value `<model> <effort>`, such as `opus high` | `model: "opus"` and `effort: "high"`. |
+
+## Panels
+
+Panels exist to get different models' blind spots. Claude Code only runs Claude models, so the adapter keeps panels diverse across Claude model names, not across vendors.
+
+- **Family is the model name.** For the family checks in `arena` and `swarm`, `opus`, `sonnet`, `fable`, and `haiku` are four families. Learn the parent's model from the session's model line in the system prompt. If you cannot tell, say that the family check did not run.
+- **Replace a non-Claude seat in a panel** with the first of `sonnet`, `fable`, `opus`, `haiku` that no other seat in that panel already uses, at the seat's effort capped at what the `Agent` schema lists. Use `haiku` only when the three stronger ones are taken. Say which model replaced which slug.
+- **A panel of `inherit-parent` or `auto` seats** is the one case that stays on the parent model. Do not spread it.
+- **Cross-judge.** The `arena` judge must not be the parent's model. Choose the first pool entry whose mapped model differs from the parent's. When the whole pool maps to the parent's model, switch the judge to the strongest other model the `Agent` schema lists and say so. Skip the judge only when no other model is listed.
+- **`swarm` model race.** Name each arm's model up front, drawn from the same four names, one arm per model, and run extra arms on repeats of the same model.
 
 ## setup-pstack
 
 Claude Code loads every `.md` file in `~/.claude/rules/` into each new session, so `setup-pstack` writes its rule there. Follow its steps with these changes:
 
 - Detect. The detected models are the `model` values that the `Agent` tool schema lists, each with an effort from its `effort` values. Write a real model as `<model> <effort>`, such as `opus xhigh`. The effort is the last token, so the budget step works as written.
-- Defaults. Map each default slug with the rows above: `claude-opus-5-5-xhigh` is `opus xhigh`, and `grok-4.7-xhigh-fast` is `inherit-parent`.
+- Defaults. Map each default slug with the rows above: `claude-opus-5-5-xhigh` is `opus xhigh`, and `grok-4.7-xhigh-fast` is `inherit-parent` for a single role, and the next free Claude model for a panel seat (see Panels).
 - Write. Write `~/.claude/rules/pstack-models.md` with no frontmatter, then the comment lines, the `# budget` line, and one line per role from step 5. Overwrite the whole file. Never put the role lines in `CLAUDE.md` or `AGENTS.md`.
 
 ## Paths
