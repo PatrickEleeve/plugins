@@ -8,8 +8,8 @@ pstack skills use Cursor names. In Claude Code, read this file once per session,
 | --- | --- |
 | `Task` | `Agent` |
 | `AskQuestion` | `AskUserQuestion`. In `-p` mode it is absent, so ask in plain text. |
-| Open a todolist | Use `TodoWrite` if the session offers it. Otherwise keep the list in your reply and update it at each phase. |
-| Run another pstack skill (`/name` or "the **name** skill") | `Read` `<pstack>/skills/<name>/SKILL.md` and follow it. The `Skill` tool refuses most pstack skills. When you tell the user to type it, write `/pstack:<name>`. |
+| Open a todolist | Use the session's task-list tool: `TodoWrite`, `TaskCreate`/`TaskUpdate`, or the host's own plan tool such as `update_plan`. Use whichever the session offers. Otherwise keep the list in your reply and update it at each phase. |
+| Run another pstack skill (`/name` or "the **name** skill") | Most pstack skills set `disable-model-invocation: true`, so the `Skill` tool refuses them and the session's skill list omits them. Try `Skill` with `pstack:<name>` only when the list shows it. Otherwise `Read` `<pstack>/skills/<name>/SKILL.md` in full and follow it as if it had loaded, including its own adapter line. Do not tell the user it is unavailable. When you tell the user to type it, write `/pstack:<name>`, which works because the block only stops the model. |
 | `Grep`, `Glob` | `Bash` with `rg` when the session has no `Grep` or `Glob`. |
 
 ## Subagent fields
@@ -24,7 +24,7 @@ pstack skills use Cursor names. In Claude Code, read this file once per session,
 | `environment: "local"` | Omit. |
 | `cloud_base_branch: <b>` | Tell the worker to check out `<b>` first. |
 | `run_in_background: true` | Omit. Subagents run in the background by default and notify you when they finish. |
-| `resume` | Spawn a new agent and paste the earlier result into its brief. |
+| `resume` | `SendMessage` with the agent's id or name, when the session offers it. That continues the same agent with its context, whether it is still running or has finished, so a steer needs no new spawn. Only when `SendMessage` is absent, spawn a new agent and paste the earlier result into its brief. |
 | `file_attachments` | List the paths in the brief. |
 
 ## Models
@@ -61,7 +61,8 @@ Claude Code has no Cursor Automations, Bugbot, Cursor cloud agents, or built-in 
 
 | Cursor | Claude Code |
 | --- | --- |
-| Cursor Automations: routines, `update_state` routine calls, `api2.cursor.sh/automations` webhooks, routine wakes, and `SendToUser` secret requests | Skip with the line. |
+| Cursor Automations: routine wakes and recurring checks | Map to Claude Code scheduling when the session offers it: `ScheduleWakeup` or `/loop` for a self-paced check, `CronCreate` or the `schedule` skill for a cron or one-time run. Say which one you used. Do not poll in a loop the harness already tracks. |
+| Cursor Automations: `update_state` routine calls, `api2.cursor.sh/automations` webhooks, and `SendToUser` secret requests | Skip with the line. |
 | Bugbot | Bugbot comments on a GitHub PR are ordinary review threads, so triage them with the forge command that the step gives. Skip a step that starts, waits for, or configures Bugbot when the PR has no Bugbot check or comment. |
 | Cursor cloud agents | `environment: "cloud"` maps to a worktree, as in Subagent fields. Skip a step that needs the cloud agent itself, such as its dashboard status or its own machine. |
 | A built-in PR tool | Use the forge command that the step gives, such as `gh pr create`. That is not a skip, so write no line. |
